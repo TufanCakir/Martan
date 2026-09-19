@@ -4,6 +4,8 @@ enum CanvasFormat: String, CaseIterable, Identifiable {
     case portrait
     case landscape
     case square
+    case logo
+    case custom
 
     var id: Self { self }
 
@@ -12,6 +14,8 @@ enum CanvasFormat: String, CaseIterable, Identifiable {
         case .portrait: "Hochformat"
         case .landscape: "Querformat"
         case .square: "Quadratisch"
+        case .logo: "Logo 1204 × 1024"
+        case .custom: "Eigene Größe"
         }
     }
 
@@ -20,6 +24,8 @@ enum CanvasFormat: String, CaseIterable, Identifiable {
         case .portrait: "rectangle.portrait"
         case .landscape: "rectangle"
         case .square: "square"
+        case .logo: "app.dashed"
+        case .custom: "aspectratio"
         }
     }
 
@@ -28,6 +34,8 @@ enum CanvasFormat: String, CaseIterable, Identifiable {
         case .portrait: CGSize(width: 2160, height: 3840)
         case .landscape: CGSize(width: 3840, height: 2160)
         case .square: CGSize(width: 3072, height: 3072)
+        case .logo: CGSize(width: 1204, height: 1024)
+        case .custom: CGSize(width: 1024, height: 1024)
         }
     }
 
@@ -57,6 +65,20 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
     case aurora
     case crystal
     case vortex
+    case angel
+    case divine
+    case infernal
+    case rebel
+    case celestial
+    case rpg
+    case realisticFantasy
+    case plainGround
+    case street
+    case ragefire
+    case void
+    case wormhole
+    case spacetime
+    case dimension
 
     var id: Self { self }
 
@@ -68,6 +90,20 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
         case .aurora: "Polarlicht"
         case .crystal: "Kristalltempel"
         case .vortex: "Leerenportal"
+        case .angel: "Engelslicht"
+        case .divine: "Göttlich"
+        case .infernal: "Teuflisch"
+        case .rebel: "Rebellisch"
+        case .celestial: "Himmlisch"
+        case .rpg: "RPG Game"
+        case .realisticFantasy: "Fantasy Realistisch"
+        case .plainGround: "Ebener Boden"
+        case .street: "Fantasy Street"
+        case .ragefire: "Ragefire"
+        case .void: "Void"
+        case .wormhole: "Wurmloch"
+        case .spacetime: "Zeitraum"
+        case .dimension: "Dimension"
         }
     }
 
@@ -79,6 +115,20 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
         case .aurora: "wave.3.up"
         case .crystal: "diamond.fill"
         case .vortex: "hurricane"
+        case .angel: "sparkles.rectangle.stack.fill"
+        case .divine: "sun.max.trianglebadge.exclamationmark.fill"
+        case .infernal: "flame.circle.fill"
+        case .rebel: "bolt.shield.fill"
+        case .celestial: "cloud.sun.fill"
+        case .rpg: "gamecontroller.fill"
+        case .realisticFantasy: "mountain.2.fill"
+        case .plainGround: "square.split.bottomrightquarter.fill"
+        case .street: "road.lanes"
+        case .ragefire: "flame.fill"
+        case .void: "circle.dotted.circle.fill"
+        case .wormhole: "circle.hexagongrid.fill"
+        case .spacetime: "clock.arrow.trianglehead.counterclockwise.rotate.90"
+        case .dimension: "square.3.layers.3d"
         }
     }
 
@@ -120,6 +170,38 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
                 energy: Color(red: 0.02, green: 0.22, blue: 0.65),
                 highlight: Color(red: 0.65, green: 0.92, blue: 1.00)
             )
+        case .angel:
+            ShaderPalette(
+                shadow: Color(red: 0.12, green: 0.16, blue: 0.34),
+                energy: Color(red: 0.56, green: 0.76, blue: 1.00),
+                highlight: Color(red: 1.00, green: 0.88, blue: 0.58)
+            )
+        case .divine:
+            ShaderPalette(shadow: Color(red: 0.16, green: 0.12, blue: 0.28), energy: Color(red: 0.96, green: 0.68, blue: 0.22), highlight: .white)
+        case .infernal:
+            ShaderPalette(shadow: Color(red: 0.08, green: 0.00, blue: 0.01), energy: Color(red: 0.72, green: 0.01, blue: 0.02), highlight: Color(red: 1.00, green: 0.30, blue: 0.02))
+        case .rebel:
+            ShaderPalette(shadow: Color(red: 0.03, green: 0.03, blue: 0.04), energy: Color(red: 0.86, green: 0.02, blue: 0.30), highlight: Color(red: 0.15, green: 0.90, blue: 1.00))
+        case .celestial:
+            ShaderPalette(shadow: Color(red: 0.08, green: 0.16, blue: 0.34), energy: Color(red: 0.38, green: 0.72, blue: 1.00), highlight: Color(red: 1.00, green: 0.96, blue: 0.78))
+        case .rpg:
+            ShaderPalette(shadow: Color(red: 0.03, green: 0.08, blue: 0.04), energy: Color(red: 0.18, green: 0.62, blue: 0.24), highlight: Color(red: 1.00, green: 0.78, blue: 0.20))
+        case .realisticFantasy:
+            ShaderPalette(shadow: Color(red: 0.05, green: 0.08, blue: 0.12), energy: Color(red: 0.20, green: 0.42, blue: 0.38), highlight: Color(red: 0.84, green: 0.76, blue: 0.58))
+        case .plainGround:
+            ShaderPalette(shadow: Color(red: 0.08, green: 0.06, blue: 0.04), energy: Color(red: 0.32, green: 0.26, blue: 0.16), highlight: Color(red: 0.70, green: 0.58, blue: 0.34))
+        case .street:
+            ShaderPalette(shadow: Color(red: 0.01, green: 0.02, blue: 0.04), energy: Color(red: 0.55, green: 0.04, blue: 0.58), highlight: Color(red: 0.02, green: 0.92, blue: 1.00))
+        case .ragefire:
+            ShaderPalette(shadow: Color(red: 0.12, green: 0.00, blue: 0.00), energy: Color(red: 1.00, green: 0.08, blue: 0.00), highlight: Color(red: 1.00, green: 0.82, blue: 0.05))
+        case .void:
+            ShaderPalette(shadow: .black, energy: Color(red: 0.12, green: 0.00, blue: 0.28), highlight: Color(red: 0.64, green: 0.18, blue: 1.00))
+        case .wormhole:
+            ShaderPalette(shadow: Color(red: 0.00, green: 0.01, blue: 0.08), energy: Color(red: 0.04, green: 0.42, blue: 0.88), highlight: Color(red: 0.82, green: 0.98, blue: 1.00))
+        case .spacetime:
+            ShaderPalette(shadow: Color(red: 0.02, green: 0.00, blue: 0.10), energy: Color(red: 0.42, green: 0.10, blue: 0.72), highlight: Color(red: 1.00, green: 0.42, blue: 0.72))
+        case .dimension:
+            ShaderPalette(shadow: Color(red: 0.00, green: 0.04, blue: 0.08), energy: Color(red: 0.00, green: 0.70, blue: 0.64), highlight: Color(red: 0.92, green: 1.00, blue: 0.62))
         }
     }
 }
@@ -131,43 +213,28 @@ struct WallpaperConfiguration: Equatable {
     var detail: Float = 0.65
     var glow: Float = 0.72
     var palette = FantasyStyle.nebula.defaultPalette
+    var customWidth = 1024
+    var customHeight = 1024
 
-    mutating func randomizeArtwork() {
-        style = FantasyStyle.allCases.randomElement() ?? .nebula
-        seed = Float.random(in: 0...1000)
-        detail = Float.random(in: 0.45...1)
-        glow = Float.random(in: 0.5...1)
-        palette = .random()
-    }
-}
-
-private extension ShaderPalette {
-    static func random() -> ShaderPalette {
-        let baseHue = Double.random(in: 0...1)
-        let energyHue = wrappedHue(baseHue + Double.random(in: 0.08...0.28))
-        let highlightHue = wrappedHue(baseHue - Double.random(in: 0.06...0.22))
-
-        return ShaderPalette(
-            shadow: Color(
-                hue: baseHue,
-                saturation: Double.random(in: 0.65...1),
-                brightness: Double.random(in: 0.035...0.14)
-            ),
-            energy: Color(
-                hue: energyHue,
-                saturation: Double.random(in: 0.65...1),
-                brightness: Double.random(in: 0.58...0.9)
-            ),
-            highlight: Color(
-                hue: highlightHue,
-                saturation: Double.random(in: 0.35...0.85),
-                brightness: Double.random(in: 0.9...1)
-            )
+    var exportSize: CGSize {
+        guard format == .custom else { return format.exportSize }
+        return CGSize(
+            width: min(max(customWidth, 64), 8192),
+            height: min(max(customHeight, 64), 8192)
         )
     }
 
-    static func wrappedHue(_ value: Double) -> Double {
-        let remainder = value.truncatingRemainder(dividingBy: 1)
-        return remainder < 0 ? remainder + 1 : remainder
+    var aspectRatio: CGFloat {
+        exportSize.width / exportSize.height
+    }
+
+    var resolution: String {
+        "\(Int(exportSize.width)) × \(Int(exportSize.height))"
+    }
+
+    mutating func randomizeCurrentStyle() {
+        seed = Float.random(in: 0...1000)
+        detail = Float.random(in: 0.45...1)
+        glow = Float.random(in: 0.5...1)
     }
 }

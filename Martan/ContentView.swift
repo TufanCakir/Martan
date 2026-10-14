@@ -24,6 +24,7 @@ struct ContentView: View {
                             detail: $configuration.detail,
                             glow: $configuration.glow
                         )
+                        AnimationSettings(configuration: $configuration)
                         ExactSettings(configuration: $configuration)
                     }
                     .padding(.horizontal)
@@ -58,11 +59,15 @@ struct ContentView: View {
 
                     Spacer()
 
-                    Button(action: saveWallpaper) {
+                    Menu {
+                        Button("Einzelbild", systemImage: "photo", action: saveWallpaper)
+                        Button("Sprite-Sheet", systemImage: "square.grid.3x3.fill", action: saveSpriteSheet)
+                        Button("Framefolge", systemImage: "photo.stack.fill", action: saveFrameSequence)
+                    } label: {
                         if isExporting {
                             ProgressView()
                         } else {
-                            Label("In Fotos speichern", systemImage: "square.and.arrow.down.fill")
+                            Label("Exportieren", systemImage: "square.and.arrow.down.fill")
                         }
                     }
                     .disabled(isExporting)
@@ -86,6 +91,18 @@ struct ContentView: View {
     }
 
     private func saveWallpaper() {
+        export(.singleImage)
+    }
+
+    private func saveSpriteSheet() {
+        export(.spriteSheet)
+    }
+
+    private func saveFrameSequence() {
+        export(.frameSequence)
+    }
+
+    private func export(_ kind: ExportKind) {
         guard !isExporting else { return }
         isExporting = true
         let snapshot = configuration
@@ -94,16 +111,39 @@ struct ContentView: View {
             do {
                 await Task.yield()
                 let renderer = MetalWallpaperRenderer()
-                let image = try renderer.renderImage(
-                    size: snapshot.exportSize,
-                    configuration: snapshot
-                )
-                try await PhotoLibrarySaver.save(image)
-                alertMessage = ExportAlert(message: "Dein Fantasy-Background wurde in Fotos gespeichert.")
+                switch kind {
+                case .singleImage:
+                    let image = try renderer.renderImage(
+                        size: snapshot.exportSize,
+                        configuration: snapshot
+                    )
+                    try await PhotoLibrarySaver.save(image)
+                case .spriteSheet:
+                    let image = try renderer.renderSpriteSheet(configuration: snapshot)
+                    try await PhotoLibrarySaver.save(image)
+                case .frameSequence:
+                    let images = try renderer.renderFrames(configuration: snapshot)
+                    try await PhotoLibrarySaver.save(images)
+                }
+                alertMessage = ExportAlert(message: kind.successMessage)
             } catch {
                 alertMessage = ExportAlert(message: error.localizedDescription)
             }
             isExporting = false
+        }
+    }
+}
+
+private enum ExportKind {
+    case singleImage
+    case spriteSheet
+    case frameSequence
+
+    var successMessage: String {
+        switch self {
+        case .singleImage: "Dein Einzelbild wurde in Fotos gespeichert."
+        case .spriteSheet: "Dein Sprite-Sheet wurde in Fotos gespeichert."
+        case .frameSequence: "Deine Framefolge wurde in Fotos gespeichert."
         }
     }
 }
@@ -303,6 +343,111 @@ private struct CompactSlider: View {
             Slider(value: $value, in: 0...1)
                 .controlSize(.mini)
         }
+    }
+}
+
+private struct AnimationSettings: View {
+    @Binding var configuration: WallpaperConfiguration
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            SectionTitle(title: "ANIMATION", systemImage: "play.rectangle.fill")
+
+            VStack(spacing: 12) {
+                Toggle(isOn: $configuration.animationEnabled) {
+                    Label(
+                        configuration.animationEnabled ? "Vorschau läuft" : "Vorschau pausiert",
+                        systemImage: configuration.animationEnabled ? "play.fill" : "pause.fill"
+                    )
+                }
+
+                AnimationSlider(
+                    title: "Geschwindigkeit",
+                    value: $configuration.animationSpeed,
+                    range: 0.25...3,
+                    suffix: "×"
+                )
+
+                HStack(spacing: 12) {
+                    AnimationValuePicker(
+                        title: "FPS",
+                        selection: $configuration.framesPerSecond,
+                        values: [12, 24, 30, 60]
+                    )
+                    AnimationValuePicker(
+                        title: "Framebreite",
+                        selection: $configuration.spriteFrameWidth,
+                        values: [128, 256, 512, 1024]
+                    )
+                    AnimationValuePicker(
+                        title: "Framehöhe",
+                        selection: $configuration.spriteFrameHeight,
+                        values: [128, 256, 512, 1024]
+                    )
+                }
+
+                VStack(spacing: 4) {
+                    HStack {
+                        Text("Dauer")
+                        Spacer()
+                        Text(configuration.animationDuration, format: .number.precision(.fractionLength(1)))
+                            .monospacedDigit()
+                        Text("s")
+                    }
+                    .font(.caption)
+
+                    Slider(value: $configuration.animationDuration, in: 0.5...5, step: 0.5)
+                }
+
+                Text(
+                    "\(configuration.animationFrameCount) Frames · Sheet \(Int(configuration.spriteSheetSize.width)) × \(Int(configuration.spriteSheetSize.height)) px"
+                )
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(12)
+            .background(.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+}
+
+private struct AnimationSlider: View {
+    let title: LocalizedStringResource
+    @Binding var value: Float
+    let range: ClosedRange<Float>
+    let suffix: LocalizedStringResource
+
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack {
+                Text(title)
+                Spacer()
+                Text(value, format: .number.precision(.fractionLength(2)))
+                    .monospacedDigit()
+                Text(suffix)
+            }
+            .font(.caption)
+            Slider(value: $value, in: range)
+        }
+    }
+}
+
+private struct AnimationValuePicker: View {
+    let title: LocalizedStringResource
+    @Binding var selection: Int
+    let values: [Int]
+
+    var body: some View {
+        Picker(title, selection: $selection) {
+            ForEach(values, id: \.self) { value in
+                Text(value, format: .number)
+                    .tag(value)
+            }
+        }
+        .pickerStyle(.menu)
+        .frame(maxWidth: .infinity)
     }
 }
 

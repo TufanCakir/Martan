@@ -9,6 +9,7 @@ struct VertexOut {
 struct Uniforms {
     float2 resolution;
     float seed;
+    float time;
     float detail;
     float glow;
     uint style;
@@ -68,7 +69,7 @@ fragment float4 fantasyFragment(VertexOut input [[stage_in]],
     uv.y = 1.0 - uv.y;
     float aspect = uniforms.resolution.x / uniforms.resolution.y;
     float2 p = (uv - 0.5) * float2(aspect, 1.0);
-    float seed = uniforms.seed;
+    float seed = uniforms.seed + uniforms.time * 0.32;
 
     float warpA = fbm(p * 2.2 + seed, uniforms.detail);
     float warpB = fbm(p * 3.1 - seed * 0.73 + warpA, uniforms.detail);
@@ -224,13 +225,123 @@ fragment float4 fantasyFragment(VertexOut input [[stage_in]],
         float grid = min(abs(fract(warped.x * 8.0) - 0.5), abs(fract(warped.y * 8.0) - 0.5));
         energy = lineGlow(grid, 0.008) + lineGlow(abs(radius - 0.28), 0.007);
         atmosphere = fbm(warped * 2.0 + seed, uniforms.detail);
-    } else {
+    } else if (uniforms.style == 19) {
         // Interleaved dimensional planes and a central rift.
         float planes = abs(sin((p.x + p.y * 0.55 + warpA * 0.15) * 26.0));
         float rift = lineGlow(abs(p.x + sin(p.y * 8.0 + seed) * 0.08), 0.009);
         float layers = pow(1.0 - planes, 9.0) * smoothstep(0.9, 0.05, length(p));
         energy = layers + rift;
         atmosphere = mix(clouds, fbm(p.yx * 5.0 - seed, uniforms.detail), 0.5);
+    } else if (uniforms.style == 20) {
+        // ASCII-like glyph cells driven by a radial animated scene.
+        float2 grid = uv * uniforms.resolution / 9.0;
+        float2 cellID = floor(grid);
+        float2 cellUV = fract(grid);
+        float2 center = (cellID * 9.0 + 4.5 - uniforms.resolution * 0.5) / uniforms.resolution.y;
+        float radius = length(center);
+        float level = saturate(0.5 + 0.5 * sin(radius * 18.0 - uniforms.time * 2.0 + atan2(center.y, center.x) * 3.0));
+        level *= smoothstep(0.65, 0.08, radius);
+        float glyph = min(abs(cellUV.x - 0.5), abs(cellUV.y - 0.5));
+        glyph = min(glyph, min(abs(cellUV.x - cellUV.y), abs(cellUV.x - (1.0 - cellUV.y))));
+        energy = smoothstep(0.13, 0.025, glyph) * step(0.18, level);
+        atmosphere = level * 0.55;
+    } else if (uniforms.style == 21) {
+        // Elastic nodes reacting to a traveling virtual touch point.
+        float2 grid = p * 14.0;
+        float2 cellID = floor(grid);
+        float2 local = fract(grid) - 0.5;
+        float2 poke = float2(sin(uniforms.time * 0.6), cos(uniforms.time * 0.5)) * 2.8;
+        float distanceToPoke = length(cellID - poke);
+        float power = exp(-distanceToPoke * distanceToPoke * 0.08);
+        float wave = sin(distanceToPoke * 1.7 - uniforms.time * 4.0) * power * 0.28;
+        float2 displaced = local - normalize(cellID - poke + 0.001) * wave;
+        float node = smoothstep(0.12, 0.035, length(displaced));
+        float springs = smoothstep(0.035, 0.008, min(abs(displaced.x), abs(displaced.y)));
+        energy = node + springs * 0.18;
+        atmosphere = power * 0.8 + wave;
+    } else if (uniforms.style == 22) {
+        // Animated pixel-block mosaic.
+        float blockCount = 7.0 + 8.0 * (sin(uniforms.time * 0.3) * 0.5 + 0.5);
+        float2 blocks = floor(uv * blockCount) / blockCount;
+        float2 orbit = float2(0.5 + 0.2 * sin(uniforms.time), 0.5 + 0.2 * cos(uniforms.time * 0.7));
+        float distanceToOrbit = length(blocks - orbit);
+        float2 local = fract(uv * blockCount);
+        float border = smoothstep(0.02, 0.10, min(min(local.x, local.y), min(1.0 - local.x, 1.0 - local.y)));
+        energy = smoothstep(0.32, 0.18, distanceToOrbit) * (0.75 + border * 0.25);
+        atmosphere = 0.5 + 0.5 * cos(distanceToOrbit * 18.0 + uniforms.time * 3.0);
+    } else if (uniforms.style == 23) {
+        // Double-pendulum trail.
+        float trail = 0.0;
+        for (int i = 0; i < 48; ++i) {
+            float age = float(i) * 0.035;
+            float t = uniforms.time - age;
+            float a1 = 1.5 * sin(t * 1.1) + 0.8 * sin(t * 2.7);
+            float a2 = 2.0 * sin(t * 1.7) + sin(t * 3.1);
+            float2 point = float2(sin(a1), -cos(a1)) * 0.22 + float2(sin(a2), -cos(a2)) * 0.18;
+            trail += 0.0018 / max(length(p - point), 0.002) * (1.0 - float(i) / 48.0);
+        }
+        energy = saturate(trail);
+        atmosphere = fbm(p * 4.0 + uniforms.time * 0.08, uniforms.detail) * 0.35;
+    } else if (uniforms.style == 24) {
+        // Expanding repeating ripple over a tiled surface.
+        float cycle = fmod(uniforms.time, 2.5);
+        float waveRadius = cycle * 0.45;
+        float distanceToWave = abs(length(p) - waveRadius);
+        float ring = smoothstep(0.075, 0.012, distanceToWave) * (1.0 - cycle / 2.5);
+        float checker = fmod(floor((p.x + 0.7) * 10.0) + floor((p.y + 0.7) * 10.0), 2.0);
+        energy = ring;
+        atmosphere = checker * 0.38 + ring * 0.35;
+    } else if (uniforms.style == 25) {
+        // Flowing underwater caustic interference.
+        float causticA = abs(sin(fbm(p * 5.0 + uniforms.time * 0.18, uniforms.detail) * 8.0 + uniforms.time));
+        float causticB = abs(sin(fbm(p * 7.0 - uniforms.time * 0.12 + 4.0, uniforms.detail) * 7.0 - uniforms.time * 1.3));
+        float caustic = pow(causticA * causticB, 1.7);
+        energy = caustic * 1.8;
+        atmosphere = fbm(p * 2.5 + uniforms.time * 0.05, uniforms.detail) * 0.7;
+    } else if (uniforms.style == 26) {
+        // Cyclic ember dissolve edge with rising sparks.
+        float progress = fract(uniforms.time / 6.0);
+        float burnValue = length(p - float2(sin(uniforms.time * 0.3), cos(uniforms.time * 0.4)) * 0.14) * 0.9 + clouds * 0.45;
+        float threshold = progress * 1.25;
+        float edge = smoothstep(threshold - 0.07, threshold, burnValue) * (1.0 - smoothstep(threshold, threshold + 0.045, burnValue));
+        float sparks = step(0.985, noise(float2(floor(uv.x * 90.0), floor((uv.y - uniforms.time * 0.08) * 90.0)) + uniforms.seed));
+        energy = edge * 2.0 + sparks * smoothstep(0.8, 0.2, abs(burnValue - threshold));
+        atmosphere = smoothstep(threshold + 0.04, threshold - 0.04, burnValue) * 0.55;
+    } else if (uniforms.style == 27) {
+        // Six-fold growing crystalline branches.
+        float growth = 0.08 + 0.48 * (0.5 + 0.5 * sin(uniforms.time * 0.55));
+        float angle = atan2(p.y, p.x);
+        float radius = length(p);
+        float folded = abs(fract(angle / (2.0 * M_PI_F) * 6.0 + 0.5) - 0.5);
+        float branch = folded * radius;
+        float mainStem = lineGlow(branch, 0.006) * step(radius, growth);
+        float sideBranches = pow(1.0 - abs(sin(radius * 65.0 - folded * 16.0)), 10.0) * step(radius, growth);
+        energy = mainStem + sideBranches;
+        atmosphere = fbm(p * 5.0 + uniforms.time * 0.04, uniforms.detail) * 0.35;
+    } else if (uniforms.style == 28) {
+        // Pulsing colored circles in a regular grid.
+        float2 grid = p / 0.075;
+        float2 cellID = floor(grid);
+        float2 local = fract(grid) - 0.5;
+        float distanceFromCenter = length(cellID) * 0.075;
+        float wave = 0.5 + 0.5 * sin(distanceFromCenter * 16.0 - uniforms.time * 3.0);
+        float circle = smoothstep(0.16 + wave * 0.20, 0.08 + wave * 0.12, length(local));
+        energy = circle * (0.35 + wave);
+        atmosphere = wave * 0.45;
+    } else {
+        // Hexagonal cells with radial color pulses.
+        float2 q = p * 8.0;
+        q.x *= 1.1547;
+        float row = floor(q.y);
+        q.x += fmod(row, 2.0) * 0.5;
+        float2 cell = fract(q) - 0.5;
+        float2 cellID = floor(q);
+        float hexDistance = max(abs(cell.x) * 0.866 + abs(cell.y) * 0.5, abs(cell.y));
+        float radial = length(cellID) * 0.12;
+        float pulse = pow(0.5 + 0.5 * sin(radial * 5.0 - uniforms.time * 2.0), 3.0);
+        float edge = smoothstep(0.48, 0.39, hexDistance) - smoothstep(0.39, 0.31, hexDistance);
+        energy = edge * (0.4 + pulse * 1.4);
+        atmosphere = pulse * smoothstep(0.45, 0.05, hexDistance);
     }
 
     float3 deep = uniforms.shadowColor.rgb;
@@ -240,8 +351,8 @@ fragment float4 fantasyFragment(VertexOut input [[stage_in]],
     float3 color = mix(deep, mid, smoothstep(0.12, 0.88, atmosphere));
     color += bright * energy * (0.30 + uniforms.glow * 1.25);
 
-    float starCell = hash21(floor((uv + seed) * uniforms.resolution / 3.0));
-    float stars = step(0.994, starCell) * pow(hash21(uv * 913.0 + seed), 10.0);
+    float starCell = hash21(floor((uv + uniforms.seed) * uniforms.resolution / 3.0));
+    float stars = step(0.994, starCell) * pow(hash21(uv * 913.0 + uniforms.seed), 10.0);
     float starMask = uniforms.style == 1 || uniforms.style == 2 ? 0.3 : 1.0;
     color += bright * stars * starMask * (1.0 + uniforms.glow * 2.2);
 

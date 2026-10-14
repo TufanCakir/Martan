@@ -19,6 +19,7 @@ private extension Color {
 private struct ShaderUniforms {
     var resolution: SIMD2<Float>
     var seed: Float
+    var time: Float
     var detail: Float
     var glow: Float
     var style: UInt32
@@ -45,6 +46,7 @@ final class MetalWallpaperRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let pipeline: MTLRenderPipelineState
+    private let animationStartTime = CACurrentMediaTime()
     var configuration = WallpaperConfiguration()
 
     override init() {
@@ -76,10 +78,17 @@ final class MetalWallpaperRenderer: NSObject, MTKViewDelegate {
         view.delegate = self
         view.colorPixelFormat = .bgra8Unorm
         view.framebufferOnly = true
-        view.enableSetNeedsDisplay = true
-        view.isPaused = true
         view.clearColor = MTLClearColorMake(0.01, 0.01, 0.04, 1)
-        view.setNeedsDisplay()
+        updatePlayback(of: view)
+    }
+
+    func updatePlayback(of view: MTKView) {
+        view.preferredFramesPerSecond = configuration.framesPerSecond
+        view.enableSetNeedsDisplay = !configuration.animationEnabled
+        view.isPaused = !configuration.animationEnabled
+        if !configuration.animationEnabled {
+            view.setNeedsDisplay()
+        }
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
@@ -93,13 +102,20 @@ final class MetalWallpaperRenderer: NSObject, MTKViewDelegate {
             into: commandBuffer,
             descriptor: passDescriptor,
             size: view.drawableSize,
-            configuration: configuration
+            configuration: configuration,
+            time: configuration.animationEnabled
+                ? Float(CACurrentMediaTime() - animationStartTime) * configuration.animationSpeed
+                : 0
         )
         commandBuffer.present(drawable)
         commandBuffer.commit()
     }
 
-    func renderImage(size: CGSize, configuration: WallpaperConfiguration) throws -> UIImage {
+    func renderImage(
+        size: CGSize,
+        configuration: WallpaperConfiguration,
+        time: Float = 0
+    ) throws -> UIImage {
         let width = Int(size.width)
         let height = Int(size.height)
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
@@ -120,7 +136,13 @@ final class MetalWallpaperRenderer: NSObject, MTKViewDelegate {
         passDescriptor.colorAttachments[0].texture = texture
         passDescriptor.colorAttachments[0].loadAction = .clear
         passDescriptor.colorAttachments[0].storeAction = .store
-        encode(into: commandBuffer, descriptor: passDescriptor, size: size, configuration: configuration)
+        encode(
+            into: commandBuffer,
+            descriptor: passDescriptor,
+            size: size,
+            configuration: configuration,
+            time: time
+        )
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
@@ -161,16 +183,55 @@ final class MetalWallpaperRenderer: NSObject, MTKViewDelegate {
         return UIImage(cgImage: cgImage)
     }
 
+    func renderFrames(configuration: WallpaperConfiguration) throws -> [UIImage] {
+        let frameSize = CGSize(
+            width: configuration.spriteFrameWidth,
+            height: configuration.spriteFrameHeight
+        )
+        return try (0..<configuration.animationFrameCount).map { frameIndex in
+            let time = Float(frameIndex) / Float(configuration.framesPerSecond)
+                * configuration.animationSpeed
+            return try renderImage(size: frameSize, configuration: configuration, time: time)
+        }
+    }
+
+    func renderSpriteSheet(configuration: WallpaperConfiguration) throws -> UIImage {
+        let frames = try renderFrames(configuration: configuration)
+        let format = UIGraphicsImageRendererFormat.preferred()
+        format.scale = 1
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(size: configuration.spriteSheetSize, format: format)
+        let frameWidth = CGFloat(configuration.spriteFrameWidth)
+        let frameHeight = CGFloat(configuration.spriteFrameHeight)
+
+        return renderer.image { _ in
+            for (index, frame) in frames.enumerated() {
+                let column = index % configuration.spriteColumns
+                let row = index / configuration.spriteColumns
+                frame.draw(
+                    in: CGRect(
+                        x: CGFloat(column) * frameWidth,
+                        y: CGFloat(row) * frameHeight,
+                        width: frameWidth,
+                        height: frameHeight
+                    )
+                )
+            }
+        }
+    }
+
     private func encode(
         into commandBuffer: MTLCommandBuffer,
         descriptor: MTLRenderPassDescriptor,
         size: CGSize,
-        configuration: WallpaperConfiguration
+        configuration: WallpaperConfiguration,
+        time: Float
     ) {
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
         var uniforms = ShaderUniforms(
             resolution: SIMD2(Float(size.width), Float(size.height)),
             seed: configuration.seed,
+            time: time,
             detail: configuration.detail,
             glow: configuration.glow,
             style: configuration.style.rawValue,
@@ -201,6 +262,6 @@ struct MetalWallpaperView: UIViewRepresentable {
 
     func updateUIView(_ view: MTKView, context: Context) {
         context.coordinator.configuration = configuration
-        view.setNeedsDisplay()
+        context.coordinator.updatePlayback(of: view)
     }
 }

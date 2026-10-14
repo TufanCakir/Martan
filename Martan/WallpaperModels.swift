@@ -79,6 +79,16 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
     case wormhole
     case spacetime
     case dimension
+    case ascii
+    case springGrid
+    case pixelBlocks
+    case pendulum
+    case ripple
+    case caustics
+    case emberDissolve
+    case crystalGrowth
+    case circleGrid
+    case hexPulse
 
     var id: Self { self }
 
@@ -104,6 +114,16 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
         case .wormhole: "Wurmloch"
         case .spacetime: "Zeitraum"
         case .dimension: "Dimension"
+        case .ascii: "ASCII Portal"
+        case .springGrid: "Feder-Gitter"
+        case .pixelBlocks: "Pixelblöcke"
+        case .pendulum: "Pendelspur"
+        case .ripple: "Ripple-Welle"
+        case .caustics: "Wasser-Caustics"
+        case .emberDissolve: "Ember Dissolve"
+        case .crystalGrowth: "Kristallwachstum"
+        case .circleGrid: "Kreisraster"
+        case .hexPulse: "Hex-Pulse"
         }
     }
 
@@ -129,6 +149,16 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
         case .wormhole: "circle.hexagongrid.fill"
         case .spacetime: "clock.arrow.trianglehead.counterclockwise.rotate.90"
         case .dimension: "square.3.layers.3d"
+        case .ascii: "textformat.abc"
+        case .springGrid: "circle.grid.3x3.fill"
+        case .pixelBlocks: "square.grid.3x3.square"
+        case .pendulum: "metronome.fill"
+        case .ripple: "water.waves"
+        case .caustics: "drop.triangle.fill"
+        case .emberDissolve: "sparkles"
+        case .crystalGrowth: "snowflake"
+        case .circleGrid: "circle.grid.3x3"
+        case .hexPulse: "hexagon.fill"
         }
     }
 
@@ -202,6 +232,26 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
             ShaderPalette(shadow: Color(red: 0.02, green: 0.00, blue: 0.10), energy: Color(red: 0.42, green: 0.10, blue: 0.72), highlight: Color(red: 1.00, green: 0.42, blue: 0.72))
         case .dimension:
             ShaderPalette(shadow: Color(red: 0.00, green: 0.04, blue: 0.08), energy: Color(red: 0.00, green: 0.70, blue: 0.64), highlight: Color(red: 0.92, green: 1.00, blue: 0.62))
+        case .ascii:
+            ShaderPalette(shadow: Color(red: 0.02, green: 0.02, blue: 0.04), energy: Color(red: 0.12, green: 0.72, blue: 0.86), highlight: Color(red: 1.00, green: 0.32, blue: 0.72))
+        case .springGrid:
+            ShaderPalette(shadow: Color(red: 0.04, green: 0.05, blue: 0.08), energy: Color(red: 0.18, green: 0.46, blue: 0.82), highlight: Color(red: 0.96, green: 0.32, blue: 0.18))
+        case .pixelBlocks:
+            ShaderPalette(shadow: Color(red: 0.05, green: 0.05, blue: 0.08), energy: Color(red: 0.22, green: 0.42, blue: 0.92), highlight: Color(red: 1.00, green: 0.42, blue: 0.18))
+        case .pendulum:
+            ShaderPalette(shadow: Color(red: 0.02, green: 0.02, blue: 0.05), energy: Color(red: 0.24, green: 0.52, blue: 0.92), highlight: Color(red: 1.00, green: 0.28, blue: 0.38))
+        case .ripple:
+            ShaderPalette(shadow: Color(red: 0.08, green: 0.14, blue: 0.32), energy: Color(red: 0.20, green: 0.48, blue: 0.82), highlight: Color(red: 0.62, green: 0.82, blue: 1.00))
+        case .caustics:
+            ShaderPalette(shadow: Color(red: 0.00, green: 0.05, blue: 0.15), energy: Color(red: 0.05, green: 0.48, blue: 0.70), highlight: Color(red: 0.32, green: 0.92, blue: 1.00))
+        case .emberDissolve:
+            ShaderPalette(shadow: Color(red: 0.02, green: 0.02, blue: 0.03), energy: Color(red: 0.92, green: 0.18, blue: 0.02), highlight: Color(red: 1.00, green: 0.82, blue: 0.18))
+        case .crystalGrowth:
+            ShaderPalette(shadow: Color(red: 0.01, green: 0.02, blue: 0.10), energy: Color(red: 0.25, green: 0.52, blue: 0.92), highlight: Color(red: 0.90, green: 0.96, blue: 1.00))
+        case .circleGrid:
+            ShaderPalette(shadow: Color(red: 0.05, green: 0.05, blue: 0.08), energy: Color(red: 0.24, green: 0.72, blue: 0.82), highlight: Color(red: 0.98, green: 0.34, blue: 0.74))
+        case .hexPulse:
+            ShaderPalette(shadow: Color(red: 0.02, green: 0.02, blue: 0.03), energy: Color(red: 0.14, green: 0.62, blue: 0.92), highlight: Color(red: 0.92, green: 0.24, blue: 1.00))
         }
     }
 }
@@ -215,6 +265,31 @@ struct WallpaperConfiguration: Equatable {
     var palette = FantasyStyle.nebula.defaultPalette
     var customWidth = 1024
     var customHeight = 1024
+    var animationEnabled = true
+    var animationSpeed: Float = 1
+    var animationDuration: Double = 2
+    var framesPerSecond = 24
+    var spriteFrameWidth = 256
+    var spriteFrameHeight = 256
+
+    var animationFrameCount: Int {
+        min(max(Int(animationDuration * Double(framesPerSecond)), 1), 120)
+    }
+
+    var spriteColumns: Int {
+        Int(ceil(sqrt(Double(animationFrameCount))))
+    }
+
+    var spriteRows: Int {
+        Int(ceil(Double(animationFrameCount) / Double(spriteColumns)))
+    }
+
+    var spriteSheetSize: CGSize {
+        CGSize(
+            width: spriteColumns * spriteFrameWidth,
+            height: spriteRows * spriteFrameHeight
+        )
+    }
 
     var exportSize: CGSize {
         guard format == .custom else { return format.exportSize }

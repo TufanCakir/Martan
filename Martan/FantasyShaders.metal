@@ -328,7 +328,7 @@ fragment float4 fantasyFragment(VertexOut input [[stage_in]],
         float circle = smoothstep(0.16 + wave * 0.20, 0.08 + wave * 0.12, length(local));
         energy = circle * (0.35 + wave);
         atmosphere = wave * 0.45;
-    } else {
+    } else if (uniforms.style == 29) {
         // Hexagonal cells with radial color pulses.
         float2 q = p * 8.0;
         q.x *= 1.1547;
@@ -342,6 +342,81 @@ fragment float4 fantasyFragment(VertexOut input [[stage_in]],
         float edge = smoothstep(0.48, 0.39, hexDistance) - smoothstep(0.39, 0.31, hexDistance);
         energy = edge * (0.4 + pulse * 1.4);
         atmosphere = pulse * smoothstep(0.45, 0.05, hexDistance);
+    } else if (uniforms.style == 30) {
+        // Halloween moon, jack-o'-lantern eyes, drifting fog, and bats.
+        float moon = exp(-length(p - float2(0.28, -0.24)) * 12.0);
+        float2 face = p * float2(1.0, 1.25) + float2(0.0, 0.16);
+        float pumpkin = smoothstep(0.43, 0.37, length(face));
+        float eyeA = smoothstep(0.09, 0.025, length(face - float2(-0.15, -0.05)));
+        float eyeB = smoothstep(0.09, 0.025, length(face - float2(0.15, -0.05)));
+        float mouth = smoothstep(0.045, 0.012, abs(face.y - 0.14 - abs(face.x) * 0.18)) * step(abs(face.x), 0.24);
+        float bats = step(0.965, noise(floor((p + uniforms.time * float2(-0.08, 0.02)) * 18.0) + uniforms.seed));
+        energy = (eyeA + eyeB + mouth) * pumpkin + moon + bats * 0.55;
+        atmosphere = clouds * 0.72 + pumpkin * 0.18;
+    } else if (uniforms.style == 31) {
+        // Birthday confetti, balloons, and a pulsing cake glow.
+        float2 confettiGrid = floor((uv + float2(0.0, uniforms.time * 0.12)) * 28.0);
+        float confetti = step(0.88, hash21(confettiGrid + uniforms.seed));
+        float2 balloonP = p - float2(sin(uniforms.time * 0.7) * 0.18, -0.08 + cos(uniforms.time * 0.45) * 0.04);
+        float balloon = smoothstep(0.22, 0.17, length(balloonP * float2(1.0, 1.25)));
+        float cake = smoothstep(0.035, 0.012, abs(p.y - 0.25)) * step(abs(p.x), 0.34);
+        float candles = pow(saturate(sin((p.x + 0.35) * 45.0)), 18.0) * step(abs(p.x), 0.32) * smoothstep(0.23, 0.05, abs(p.y));
+        energy = confetti * 0.65 + balloon + cake + candles;
+        atmosphere = 0.35 + 0.35 * sin(p.x * 5.0 + p.y * 4.0 + uniforms.time);
+    } else if (uniforms.style == 32) {
+        // A deep dark area with barely visible moving fractures.
+        float radius = length(p);
+        float fracture = abs(sin(p.x * 17.0 + fbm(p * 5.0 + uniforms.time * 0.05, uniforms.detail) * 8.0));
+        float cracks = pow(1.0 - fracture, 20.0);
+        float distantPulse = exp(-length(p - float2(sin(uniforms.time * 0.2), cos(uniforms.time * 0.17)) * 0.3) * 9.0);
+        energy = cracks * 0.3 + distantPulse * 0.18;
+        atmosphere = clouds * 0.09 * smoothstep(0.95, 0.12, radius);
+    } else if (uniforms.style == 33) {
+        // Dragon eye surrounded by animated overlapping scales.
+        float2 scaleGrid = p * float2(12.0, 9.0);
+        float2 scaleCell = fract(scaleGrid + float2(fmod(floor(scaleGrid.y), 2.0) * 0.5, 0.0)) - 0.5;
+        float scales = lineGlow(abs(length(scaleCell * float2(1.0, 1.35)) - 0.42), 0.007);
+        float2 eyeP = p * float2(1.0, 2.2);
+        float iris = smoothstep(0.29, 0.20, length(eyeP));
+        float pupil = smoothstep(0.055, 0.02, abs(eyeP.x + sin(eyeP.y * 7.0 + uniforms.time) * 0.012)) * iris;
+        energy = scales * 0.42 + iris * 0.75 + pupil * 1.5;
+        atmosphere = fbm(p * 3.0 + uniforms.time * 0.04, uniforms.detail) * 0.5;
+    } else if (uniforms.style == 34) {
+        // Martial-arts ink circle with fast directional strikes.
+        float radius = length(p);
+        float inkCircle = lineGlow(abs(radius - 0.30 - (warpA - 0.5) * 0.025), 0.008);
+        float strikeA = lineGlow(abs(p.y - p.x * 0.55 - sin(uniforms.time * 3.0) * 0.08), 0.006);
+        float strikeB = lineGlow(abs(p.y + p.x * 1.6 + cos(uniforms.time * 2.4) * 0.06), 0.004);
+        float yinDot = exp(-length(p - float2(0.0, 0.14)) * 28.0) + exp(-length(p + float2(0.0, 0.14)) * 28.0);
+        energy = inkCircle + (strikeA + strikeB) * smoothstep(0.75, 0.08, radius) + yinDot;
+        atmosphere = fbm(p * 6.0 + seed, uniforms.detail) * 0.28;
+    } else if (uniforms.style == 35) {
+        // Arcade beat-'em-up impact burst, speed lines, and hit flash.
+        float2 impact = p - float2(sin(uniforms.time * 1.4) * 0.16, cos(uniforms.time * 1.1) * 0.08);
+        float radius = length(impact);
+        float angle = atan2(impact.y, impact.x);
+        float speedLines = pow(abs(cos(angle * 14.0 + uniforms.time * 2.0)), 24.0) * smoothstep(0.75, 0.08, radius);
+        float hitRing = lineGlow(abs(radius - 0.22 - 0.035 * sin(uniforms.time * 6.0)), 0.009);
+        float slash = lineGlow(abs(impact.y - impact.x * 0.35), 0.008) * smoothstep(0.55, 0.03, radius);
+        energy = speedLines + hitRing + slash;
+        atmosphere = saturate(0.25 + clouds * 0.45 + sin(angle * 4.0) * 0.12);
+    } else if (uniforms.style == 36) {
+        // Smooth animated tint wash with luminous contour bands.
+        float gradient = saturate(uv.x * 0.58 + uv.y * 0.42 + (warpA - 0.5) * 0.24);
+        float contours = pow(1.0 - abs(sin((gradient + uniforms.time * 0.08) * 24.0)), 12.0);
+        float softSpot = exp(-length(p - float2(sin(uniforms.time * 0.35), cos(uniforms.time * 0.29)) * 0.26) * 4.5);
+        energy = contours * 0.42 + softSpot * 0.55;
+        atmosphere = gradient;
+    } else {
+        // Layered organic brush strokes with rough animated edges.
+        float strokeA = abs(p.y - sin(p.x * 5.0 + uniforms.time * 0.55) * 0.16 - (warpA - 0.5) * 0.12);
+        float strokeB = abs(p.y + 0.24 - sin(p.x * 7.0 - uniforms.time * 0.42) * 0.11 - (warpB - 0.5) * 0.10);
+        float strokeC = abs(p.y - 0.25 + cos(p.x * 4.0 + uniforms.time * 0.35) * 0.13);
+        float roughA = smoothstep(0.12 + noise(p * 24.0) * 0.06, 0.025, strokeA);
+        float roughB = smoothstep(0.10 + noise(p * 31.0 + 4.0) * 0.05, 0.02, strokeB);
+        float roughC = smoothstep(0.09 + noise(p * 27.0 - 8.0) * 0.04, 0.018, strokeC);
+        energy = roughA * 0.75 + roughB * 0.62 + roughC * 0.48;
+        atmosphere = fbm(p * float2(2.0, 7.0) + uniforms.time * 0.04, uniforms.detail) * 0.55;
     }
 
     float3 deep = uniforms.shadowColor.rgb;

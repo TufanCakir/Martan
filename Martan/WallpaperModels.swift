@@ -89,6 +89,14 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
     case crystalGrowth
     case circleGrid
     case hexPulse
+    case halloween
+    case birthday
+    case darkArea
+    case fantasyDragon
+    case martialArts
+    case beatEmUp
+    case tint
+    case brushStrokes
 
     var id: Self { self }
 
@@ -124,6 +132,14 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
         case .crystalGrowth: "Kristallwachstum"
         case .circleGrid: "Kreisraster"
         case .hexPulse: "Hex-Pulse"
+        case .halloween: "Halloween"
+        case .birthday: "Birthday"
+        case .darkArea: "Dark Area"
+        case .fantasyDragon: "Fantasy Dragon"
+        case .martialArts: "Martial Arts"
+        case .beatEmUp: "Beat ’em Up"
+        case .tint: "Tint Shader"
+        case .brushStrokes: "Pinselstreifen"
         }
     }
 
@@ -159,6 +175,14 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
         case .crystalGrowth: "snowflake"
         case .circleGrid: "circle.grid.3x3"
         case .hexPulse: "hexagon.fill"
+        case .halloween: "moon.stars.fill"
+        case .birthday: "birthday.cake.fill"
+        case .darkArea: "moon.fill"
+        case .fantasyDragon: "lizard.fill"
+        case .martialArts: "figure.martial.arts"
+        case .beatEmUp: "burst.fill"
+        case .tint: "paintpalette.fill"
+        case .brushStrokes: "paintbrush.pointed.fill"
         }
     }
 
@@ -252,6 +276,22 @@ enum FantasyStyle: UInt32, CaseIterable, Identifiable {
             ShaderPalette(shadow: Color(red: 0.05, green: 0.05, blue: 0.08), energy: Color(red: 0.24, green: 0.72, blue: 0.82), highlight: Color(red: 0.98, green: 0.34, blue: 0.74))
         case .hexPulse:
             ShaderPalette(shadow: Color(red: 0.02, green: 0.02, blue: 0.03), energy: Color(red: 0.14, green: 0.62, blue: 0.92), highlight: Color(red: 0.92, green: 0.24, blue: 1.00))
+        case .halloween:
+            ShaderPalette(shadow: Color(red: 0.03, green: 0.00, blue: 0.05), energy: Color(red: 0.72, green: 0.16, blue: 0.02), highlight: Color(red: 1.00, green: 0.62, blue: 0.04))
+        case .birthday:
+            ShaderPalette(shadow: Color(red: 0.08, green: 0.02, blue: 0.16), energy: Color(red: 0.96, green: 0.18, blue: 0.58), highlight: Color(red: 0.22, green: 0.92, blue: 1.00))
+        case .darkArea:
+            ShaderPalette(shadow: .black, energy: Color(red: 0.03, green: 0.06, blue: 0.12), highlight: Color(red: 0.22, green: 0.32, blue: 0.52))
+        case .fantasyDragon:
+            ShaderPalette(shadow: Color(red: 0.03, green: 0.08, blue: 0.04), energy: Color(red: 0.08, green: 0.56, blue: 0.22), highlight: Color(red: 1.00, green: 0.72, blue: 0.08))
+        case .martialArts:
+            ShaderPalette(shadow: Color(red: 0.02, green: 0.02, blue: 0.025), energy: Color(red: 0.72, green: 0.04, blue: 0.04), highlight: Color(red: 0.98, green: 0.92, blue: 0.72))
+        case .beatEmUp:
+            ShaderPalette(shadow: Color(red: 0.04, green: 0.02, blue: 0.10), energy: Color(red: 0.94, green: 0.06, blue: 0.34), highlight: Color(red: 1.00, green: 0.84, blue: 0.08))
+        case .tint:
+            ShaderPalette(shadow: Color(red: 0.02, green: 0.06, blue: 0.12), energy: Color(red: 0.08, green: 0.68, blue: 0.82), highlight: Color(red: 0.92, green: 0.28, blue: 0.72))
+        case .brushStrokes:
+            ShaderPalette(shadow: Color(red: 0.04, green: 0.03, blue: 0.02), energy: Color(red: 0.78, green: 0.16, blue: 0.08), highlight: Color(red: 1.00, green: 0.78, blue: 0.28))
         }
     }
 }

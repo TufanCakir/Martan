@@ -354,15 +354,13 @@ fragment float4 fantasyFragment(VertexOut input [[stage_in]],
         energy = (eyeA + eyeB + mouth) * pumpkin + moon + bats * 0.55;
         atmosphere = clouds * 0.72 + pumpkin * 0.18;
     } else if (uniforms.style == 31) {
-        // Birthday confetti, balloons, and a pulsing cake glow.
+        // Birthday confetti made from small animated pixel particles.
         float2 confettiGrid = floor((uv + float2(0.0, uniforms.time * 0.12)) * 28.0);
         float confetti = step(0.88, hash21(confettiGrid + uniforms.seed));
-        float2 balloonP = p - float2(sin(uniforms.time * 0.7) * 0.18, -0.08 + cos(uniforms.time * 0.45) * 0.04);
-        float balloon = smoothstep(0.22, 0.17, length(balloonP * float2(1.0, 1.25)));
-        float cake = smoothstep(0.035, 0.012, abs(p.y - 0.25)) * step(abs(p.x), 0.34);
-        float candles = pow(saturate(sin((p.x + 0.35) * 45.0)), 18.0) * step(abs(p.x), 0.32) * smoothstep(0.23, 0.05, abs(p.y));
-        energy = confetti * 0.65 + balloon + cake + candles;
-        atmosphere = 0.35 + 0.35 * sin(p.x * 5.0 + p.y * 4.0 + uniforms.time);
+        float sparkle = step(0.95, hash21(confettiGrid * 1.73 - uniforms.seed));
+        float pulse = 0.65 + 0.35 * sin(uniforms.time * 4.0 + hash21(confettiGrid) * 6.2832);
+        energy = (confetti * 0.72 + sparkle * 0.55) * pulse;
+        atmosphere = 0.24 + 0.18 * sin(p.x * 5.0 + p.y * 4.0 + uniforms.time);
     } else if (uniforms.style == 32) {
         // A deep dark area with barely visible moving fractures.
         float radius = length(p);
